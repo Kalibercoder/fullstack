@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const http = require('http');
+const socketIo = require('socket.io');
 
 const app = express();
 app.use(cors());
@@ -19,6 +21,28 @@ const db = mysql.createConnection({
 db.connect((err) => {
     if (err) throw err;
     console.log('Connected to database');
+});
+
+const server = http.createServer(app);
+const io = socketIo(server);
+
+io.on('connection', (socket) => {
+    console.log('User connected');
+
+    socket.on('message', (message) => {
+        console.log('Message received:', message);
+
+        const query = 'INSERT INTO messages (message) VALUES (?)';
+        db.query(query, [message], (err, result) => {
+            if (err) throw err;
+            console.log('Message inserted into database');
+        });
+        io.emit('message', message);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
 });
 
 app.post('/messageback', (req, res) => {

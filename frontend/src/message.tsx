@@ -1,8 +1,20 @@
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState, KeyboardEvent, useEffect } from 'react';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:3000');
 
 const ChatRoom: React.FC = () => {
     const [text, setText] = useState("");
     const [messages, setMessages] = useState<string[]>([]);
+
+    useEffect(() => {
+        socket.on('message', (message: string) => {
+            setMessages(prevMessages => [...prevMessages, message]);
+        }); 
+        return () => {
+            socket.off('message');  
+    };
+    }, []);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setText(event.target.value);
@@ -10,10 +22,10 @@ const ChatRoom: React.FC = () => {
 
     const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter') {
-            setMessages(prevMessages => [...prevMessages, text]);
+            socket.emit('message', text);
             setText("");
             event.preventDefault(); 
-        }
+        } 
     };
 
     return (
