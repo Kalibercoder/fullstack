@@ -5,10 +5,26 @@ const cors = require('cors');
 const bcrypt = require('bcrypt');
 const http = require('http');
 const socketIo = require('socket.io');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token == null) return res.sendStatus(401); // if there isn't any token
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
+
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -116,7 +132,10 @@ app.post('/login', (req, res) => {
                 } else if (!isMatch) {
                     res.status(401).send('Invalid username or password');
                 } else {
-                    res.status(200).send('Login successful');
+                   // res.status(200).send('Login successful');
+                    const user = { name: username };
+                    const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+                    res.json({ accessToken: accessToken });
                 }
             });
         }
