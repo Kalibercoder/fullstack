@@ -3,12 +3,15 @@ import io from 'socket.io-client';
 
 const socket = io('http://localhost:3000');
 
+
+
 const ChatRoom: React.FC = () => {
     const [text, setText] = useState("");
     const [messages, setMessages] = useState<string[]>([]);
 
     useEffect(() => {
         socket.on('message', (message: string) => {
+            console.log('Received message:', message);
             setMessages(prevMessages => [...prevMessages, message]);
         }); 
         return () => {
@@ -28,6 +31,21 @@ const ChatRoom: React.FC = () => {
         } 
     };
 
+    function sendMessage(message: string) {
+        fetch('/send-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+        }) 
+    }
+    sendMessage('Hello, world!');
     return (
         <div className='messageparent'>
             

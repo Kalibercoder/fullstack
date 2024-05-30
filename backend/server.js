@@ -21,10 +21,31 @@ const db = mysql.createConnection({
 db.connect((err) => {
     if (err) throw err;
     console.log('Connected to database');
+
+    // Create the messages table
+    db.query(
+        `CREATE TABLE IF NOT EXISTS messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            message VARCHAR(255) NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        (err, result) => {
+            if (err) throw err;
+            console.log("Messages table created/exists");
+        }
+    );
 });
 
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    cors: {
+        origin: "*", // Allow all origins
+        methods: ["GET", "POST"], // Allow GET and POST methods
+        allowedHeaders: ["my-custom-header"], // Allow specific headers
+        credentials: true // Allow credentials
+    }
+});
+
 
 io.on('connection', (socket) => {
     console.log('User connected');
@@ -35,7 +56,6 @@ io.on('connection', (socket) => {
         const query = 'INSERT INTO messages (message) VALUES (?)';
         db.query(query, [message], (err, result) => {
             if (err) throw err;
-            console.log('Message inserted into database');
         });
         io.emit('message', message);
     });
@@ -103,6 +123,26 @@ app.post('/login', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
+
+app.post('/send-message', (req, res) => {
+    const message = req.body.message;
+
+    // Insert the message into the messages table
+    db.query(
+        "INSERT INTO messages (text) VALUES (?)",
+        [message],
+        (err, result) => {
+            if (err) {
+                console.error('Error:', err);
+                res.status(500).send('Server error');
+            } else {
+                res.status(200).send('Message sent');
+            }
+        }
+    );
+});
+
+
+server.listen(3000, () => {
     console.log('Server is running on port 3000');
 });
