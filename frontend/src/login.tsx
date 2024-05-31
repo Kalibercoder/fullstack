@@ -16,9 +16,11 @@ const LoginPage = () => {
             },
             body: JSON.stringify({ username, password })
         })
-        .then(response => response.text())
+        .then(response => response.json())
         .then(data => {
-            if (data === 'Login successful') {
+            if (data.accessToken) {
+                // Login was successful, store the token somewhere safe
+                localStorage.setItem('accessToken', data.accessToken);
                 navigate('/message'); 
             } else {
                 window.alert(`Error: ${data}`);
