@@ -3,20 +3,30 @@ import io from 'socket.io-client';
 
 const socket = io('http://localhost:3000');
 
-
+type Message = {
+    text: string;
+    userId: string;
+};
 
 const ChatRoom: React.FC = () => {
+    const [userId, setUserId] = useState(null);
     const [text, setText] = useState("");
-    const [messages, setMessages] = useState<string[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
+
+    useEffect(() => {
+        socket.on('userId', (userId) => {
+            setUserId(userId);
+        });
+    }, []);
 
     useEffect(() => {
         socket.on('message', (message: string) => {
             console.log('Received message:', message);
-            setMessages(prevMessages => [...prevMessages, message]);
+            setMessages(prevMessages => [...prevMessages, { text: message, userId: 'other'}]);
         }); 
         return () => {
             socket.off('message');  
-    };
+        };
     }, []);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,8 +35,9 @@ const ChatRoom: React.FC = () => {
 
     const handleKeyPress = (event: KeyboardEvent<HTMLInputElement>) => {
         if (event.key === 'Enter') {
+            sendMessage(text);
             socket.emit('message', text);
-            setText("");
+            setText('');
             event.preventDefault(); 
         } 
     };
@@ -37,7 +48,7 @@ const ChatRoom: React.FC = () => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message }),
+            body: JSON.stringify({ message, userId }),
         })
         .then(response => {
             if (!response.ok) {
@@ -45,17 +56,15 @@ const ChatRoom: React.FC = () => {
             }
         }) 
     }
-    sendMessage('Hello, world!');
+
     return (
         <div className='messageparent'>
-            
-        <div className='messageboard'>
-            <ul>
-                {messages.map((message, index) => <li key={index}>{message}</li>)}
-            </ul>
+            <div className='messageboard'>
+                <ul>
+                    {messages.map((message, index) => <li key={index} className={message.userId === userId ? 'sent' : 'received'}>{message.text}</li>)}
+                </ul>
+            </div>
             <input className='chatinput' type="text" value={text} onChange={handleInputChange} onKeyPress={handleKeyPress} />
-        </div>
-            
         </div>
     );
 };

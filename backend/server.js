@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
@@ -16,7 +17,7 @@ function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (token == null) return res.sendStatus(401); // if there isn't any token
+    if (token == null) return res.sendStatus(401);
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
@@ -38,11 +39,12 @@ db.connect((err) => {
     if (err) throw err;
     console.log('Connected to database');
 
-    // Create the messages table
+    
     db.query(
         `CREATE TABLE IF NOT EXISTS messages (
             id INT AUTO_INCREMENT PRIMARY KEY,
             message VARCHAR(255) NOT NULL,
+            type VARCHAR(255) NOT NULL,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
         (err, result) => {
@@ -55,16 +57,17 @@ db.connect((err) => {
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
-        origin: "*", // Allow all origins
-        methods: ["GET", "POST"], // Allow GET and POST methods
-        allowedHeaders: ["my-custom-header"], // Allow specific headers
-        credentials: true // Allow credentials
+        origin: "*", 
+        methods: ["GET", "POST"], 
+        allowedHeaders: ["my-custom-header"], 
+        credentials: true 
     }
 });
 
 
 io.on('connection', (socket) => {
-    console.log('User connected');
+    const userId = uuidv4();
+    socket.emit('userId', userId);
 
     socket.on('message', (message) => {
         console.log('Message received:', message);
@@ -80,6 +83,8 @@ io.on('connection', (socket) => {
         console.log('User disconnected');
     });
 });
+
+app.use(express.json());
 
 app.post('/messageback', (req, res) => {
     const { username, email, password } = req.body;
@@ -145,11 +150,12 @@ app.post('/login', (req, res) => {
 
 app.post('/send-message', (req, res) => {
     const message = req.body.message;
+    const userId = req.body.userId;
 
     // Insert the message into the messages table
     db.query(
-        "INSERT INTO messages (text) VALUES (?)",
-        [message],
+        "INSERT INTO messages (text, userId) VALUES (?, ?)",
+        [message, userId],
         (err, result) => {
             if (err) {
                 console.error('Error:', err);

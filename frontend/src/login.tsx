@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import { useState, FormEvent, } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 
+interface IResponseData {
+    accessToken?: string;
+    [key: string]: any;
+}
+
+interface IError {
+    message: string;
+}
+
 const LoginPage = () => {
     const navigate = useNavigate();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [username, setUsername] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
 
-    const handleSubmit = (event: React.FormEvent) => {
+    const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
         fetch('http://localhost:3000/login', { 
             method: 'POST',
@@ -16,18 +25,26 @@ const LoginPage = () => {
             },
             body: JSON.stringify({ username, password })
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Invalid username or password');
+            }
+            return response.json();
+        })
+        .then((data: IResponseData) => {
             if (data.accessToken) {
-                // Login was successful, store the token somewhere safe
                 localStorage.setItem('accessToken', data.accessToken);
-                navigate('/message'); 
+                if (localStorage.getItem('accessToken')) {
+                    navigate('/message'); 
+                } else {
+                    throw new Error('Failed to store access token');
+                }
             } else {
-                window.alert(`Error: ${data}`);
+                throw new Error('Invalid username or password');
             }
         })
-        .catch((error) => {
-            console.error('Error:', error);
+        .catch((error: IError) => {
+            alert(error.message);
         });
     };
 
