@@ -30,7 +30,7 @@ const App: React.FC = () => {
           <Route path="/" element={<LoginPage />} />
           <Route path="/message" element={isAuthenticated ? <MessagePage /> : <Navigate to="/" replace />} />
           <Route path="/register" element={<RegisterForm />} />
-          <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/" replace />} />
+          <Route path="/profile" element={isAuthenticated ? <Profile username="your-username" /> : <Navigate to="/" replace />} />
         </Routes>
       </div>
     </Router>

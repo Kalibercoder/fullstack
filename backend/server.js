@@ -1,4 +1,21 @@
+
+/* 
+Content directions
+    1. Module imports
+    2. Jwt token
+    3. Mysql connection and querys
+    4. socket.io
+    5. Routes handlers
+    6. Login
+    7. Message post
+    8. Profile img
+    9. Server listening
+*/
+
+// 1. module imports
 const express = require('express');
+const multer = require('multer');
+const upload = multer( {dest: 'uploads/'});
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -10,9 +27,12 @@ const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
+app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
+
+// 2. jwt token 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -26,7 +46,7 @@ function authenticateToken(req, res, next) {
     });
 }
 
-
+// 3. Mysql connection and querys
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -52,8 +72,22 @@ db.connect((err) => {
             console.log("Messages table created/exists");
         }
     );
+
+    db.query(
+        `CREATE TABLE IF NOT EXISTS profile_images (
+            id INT AUTO_INCREMENT PRIMARY KEY, 
+            username VARCHAR(255), 
+            img LONGBLOB
+        )`,
+        (err, result) => {
+            if (err) throw err;
+            console.log("Profile Images table created/exists");
+        }
+    );
 });
 
+
+// 4. Socket.io
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: {
@@ -84,7 +118,8 @@ io.on('connection', (socket) => {
     });
 });
 
-app.use(express.json());
+
+// 5. Routes handlers
 
 app.post('/messageback', (req, res) => {
     const { username, email, password } = req.body;
@@ -118,7 +153,7 @@ app.post('/messageback', (req, res) => {
         }
     });
 });
-
+// 6. Login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     const query = 'SELECT * FROM users WHERE username = ?';
@@ -147,7 +182,7 @@ app.post('/login', (req, res) => {
     });
 });
 
-
+// 7. Message post
 app.post('/send-message', (req, res) => {
     const message = req.body.message;
     const userId = req.body.userId;
@@ -168,6 +203,31 @@ app.post('/send-message', (req, res) => {
 });
 
 
+// 8. Profile img 
+
+app.get('/profile/:username', (req, res) => {
+    db.query(
+        "SELECT img FROM profile_images WHERE username = ?",
+        [req.params.username],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                res.sendStatus(500);
+            } else {
+                if (result.length > 0) {
+                    // Convert the image data to a base64 string
+                    const img = Buffer.from(result[0].img).toString('base64');
+
+                    res.send(img);
+                } else {
+                    res.sendStatus(404);
+                }
+            }
+        }
+    );
+});
+
+// 9. server listening
 server.listen(3000, () => {
     console.log('Server is running on port 3000');
 });

@@ -1,12 +1,14 @@
-import { useState, FormEvent, } from 'react';
+import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './index.css';
 
+// Define the shape of the response data from the server
 interface IResponseData {
     accessToken?: string;
     [key: string]: any;
 }
 
+// Define the shape of the error object
 interface IError {
     message: string;
 }
@@ -16,8 +18,11 @@ const LoginPage = () => {
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
 
+    // Handle form submission
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
+
+        // Send a POST request to the server with the username and password
         fetch('http://localhost:3000/login', { 
             method: 'POST',
             headers: {
@@ -33,8 +38,12 @@ const LoginPage = () => {
         })
         .then((data: IResponseData) => {
             if (data.accessToken) {
+                // Store the access token in the local storage
                 localStorage.setItem('accessToken', data.accessToken);
+
+                // Check if the access token was successfully stored
                 if (localStorage.getItem('accessToken')) {
+                    // Navigate to the '/message' page
                     navigate('/message'); 
                 } else {
                     throw new Error('Failed to store access token');
@@ -44,6 +53,7 @@ const LoginPage = () => {
             }
         })
         .catch((error: IError) => {
+            // Display an alert with the error message
             alert(error.message);
         });
     };
