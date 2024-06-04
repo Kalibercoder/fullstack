@@ -62,9 +62,10 @@ db.connect((err) => {
     
     db.query(
         `CREATE TABLE IF NOT EXISTS messages (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            messageId VARCHAR(255),
+            id char(36),
             message VARCHAR(255) NOT NULL,
-            type VARCHAR(255) NOT NULL,
+            username char(36),
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
         (err, result) => {
@@ -99,15 +100,17 @@ const io = socketIo(server, {
 });
 
 
+// cors
+
+app.use(cors({ origin: 'http://localhost:5173' }));
+
 io.on('connection', (socket) => {
-    const userId = uuidv4();
-    socket.emit('userId', userId);
+    console.log('User connected');
 
     socket.on('message', (message) => {
         console.log('Message received:', message);
-
-        const query = 'INSERT INTO messages (message) VALUES (?)';
-        db.query(query, [message], (err, result) => {
+        const query = 'INSERT INTO messages (message, messageId, id, username) VALUES (?, ?, ?, ?)';
+        db.query(query, [message, socket.id, null, null], (err, result) => {
             if (err) throw err;
         });
         io.emit('message', message);
@@ -118,8 +121,7 @@ io.on('connection', (socket) => {
     });
 });
 
-
-// 5. Routes handlers
+// Routes handlers
 
 app.post('/messageback', (req, res) => {
     const { username, email, password } = req.body;
@@ -131,28 +133,13 @@ app.post('/messageback', (req, res) => {
             res.status(500).send('Server error');
         } else if (result.length > 0) {
             const conflict = result[0].username === username ? 'Username' : 'Email';
-            res.status(409).send(`${conflict} already taken`);
+            res.status(409).send(`${conflict} already exists`);
         } else {
-            bcrypt.hash(password, 10, (err, hash) => {
-                if (err) {
-                    console.error('Error:', err);
-                    res.status(500).send('Server error');
-                    return;
-                }
-
-                const insertQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-                db.query(insertQuery, [username, email, hash], (err, result) => {
-                    if (err) {
-                        console.error('Error:', err);
-                        res.status(500).send('Server error');
-                    } else {
-                        res.status(200).send('User registered successfully');
-                    }
-                });
-            });
+            // Insert the new user into the database...
         }
     });
 });
+
 // 6. Login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
