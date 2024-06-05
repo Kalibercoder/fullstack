@@ -25,14 +25,17 @@ const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
+const cookieParser = require('cookie-parser');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
+app.use(cookieParser()); // httpOnly secure SameSite 
 
 
 // 2. jwt token 
+
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -44,7 +47,7 @@ function authenticateToken(req, res, next) {
         req.user = user;
         next();
     });
-}
+} 
 
 // 3. Mysql connection and querys
 const db = mysql.createConnection({
@@ -85,6 +88,19 @@ db.connect((err) => {
             console.log("Profile Images table created/exists");
         }
     );
+
+    db.query(`
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255), 
+        email VARCHAR(255), 
+        password VARCHAR(255)
+    )`,
+    (err, result) => {
+        if (err) throw err;
+        console.log("Users table created/exists");
+    }
+);
 });
 
 
@@ -122,11 +138,11 @@ io.on('connection', (socket) => {
 });
 
 // Routes handlers
-
 app.post('/messageback', (req, res) => {
     const { username, email, password } = req.body;
     const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
 
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
     db.query(query, [username, email], (err, result) => {
         if (err) {
             console.error('Error:', err);
@@ -135,8 +151,17 @@ app.post('/messageback', (req, res) => {
             const conflict = result[0].username === username ? 'Username' : 'Email';
             res.status(409).send(`${conflict} already exists`);
         } else {
-            // Insert the new user into the database...
+            const insertQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
+            db.query(insertQuery, [username, email, hashedPassword], (err, result) => {
+                if (err) {
+                    console.error('Error:', err);
+                    res.status(500).send('Server error');
+                } else {
+                    res.status(201).send('User registered successfully');
+                }
+            });
         }
+    });
     });
 });
 
@@ -160,9 +185,10 @@ app.post('/login', (req, res) => {
                     res.status(401).send('Invalid username or password');
                 } else {
                    // res.status(200).send('Login successful');
+                   
                     const user = { name: username };
                     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
-                    res.json({ accessToken: accessToken });
+                    res.json({ accessToken: accessToken }); 
                 }
             });
         }
