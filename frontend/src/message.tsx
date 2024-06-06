@@ -73,10 +73,10 @@ const ChatRoom: React.FC = () => {
 
 const MessagePage: React.FC = () => {
     return (
-        <div >
+        <div>
             <h1>FEIDIPPIDES</h1>
+            <a href="/profile"><h2>Profile Page</h2></a>
             <ChatRoom /> {/* Render the ChatRoom component */}
-            <h2>CHERETE NIKOMEN</h2>
         </div>
     );
 };

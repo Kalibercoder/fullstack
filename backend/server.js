@@ -5,7 +5,7 @@ Content directions
     2. Jwt token
     3. Mysql connection and querys
     4. socket.io
-    5. Routes handlers
+    5. Routes handlers // Register
     6. Login
     7. Message post
     8. Profile img
@@ -138,6 +138,8 @@ io.on('connection', (socket) => {
 });
 
 // Routes handlers
+
+// 5. Register
 app.post('/messageback', (req, res) => {
     const { username, email, password } = req.body;
     const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
