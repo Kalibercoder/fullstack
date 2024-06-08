@@ -1,6 +1,8 @@
 
-// 
-import React from 'react';
+
+// Tried private routing
+
+/* import React from 'react';
 import { Route } from 'react-router-dom';
 
 const PrivateRoute: React.FC<{
@@ -14,4 +16,4 @@ const PrivateRoute: React.FC<{
   );
 };
 
-export default PrivateRoute;
+export default PrivateRoute; */

@@ -1,28 +1,32 @@
 import React, { useState, KeyboardEvent, useEffect } from 'react';
 import io from 'socket.io-client';
-
 const socket = io('http://localhost:3000'); // Connect to the socket.io server
 
 type Message = {
     text: string;
     userId: string;
+    username: string;
 };
 
 const ChatRoom: React.FC = () => {
+    const username = localStorage.getItem('username'); // Get the username from localStorage
     const [userId, setUserId] = useState(null); // State to store the user ID
     const [text, setText] = useState(""); // State to store the input text
     const [messages, setMessages] = useState<Message[]>([]); // State to store the messages
 
     useEffect(() => {
+        
+            // Emit the 'set-username' event with the username from the global state
+        socket.emit('set-username', username);
         socket.on('userId', (userId) => {
             setUserId(userId); // Set the user ID received from the server
         });
     }, []);
 
     useEffect(() => {
-        socket.on('message', (message: string) => {
-            console.log('Received message:', message);
-            setMessages(prevMessages => [...prevMessages, { text: message, userId: 'other'}]); // Add the received message to the messages state
+        socket.on('message', (messageObject) => {
+            console.log('Received message:', messageObject.message);
+            setMessages(prevMessages => [...prevMessages, { text: messageObject.message, username: messageObject.username, userId: 'other'}]); // Add the received message to the messages state
         }); 
         return () => {
             socket.off('message'); // Unsubscribe from the 'message' event when the component is unmounted
@@ -61,8 +65,11 @@ const ChatRoom: React.FC = () => {
         <div className='messageparent'>
             <div className='messageboard'>
                 <ul>
-                    {messages.map((message, index) => <li key={index} className={message.userId === userId ? 'sent' : 'received'}>{message.text}</li>)}
-                    {/* Render the messages as list items */}
+                {messages.map((message, index) => (
+                 <p key={index}>
+                    <strong>{message.userId === userId ? 'You' : message.username}: </strong> {message.text}
+                 </p>
+                ))}
                 </ul>
             </div>
             <input className='chatinput' type="text" value={text} onChange={handleInputChange} onKeyPress={handleKeyPress} />

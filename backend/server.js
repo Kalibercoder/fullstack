@@ -62,20 +62,33 @@ db.connect((err) => {
     if (err) throw err;
     console.log('Connected to database');
 
-    
-    db.query(
-        `CREATE TABLE IF NOT EXISTS messages (
-            messageId VARCHAR(255),
-            id char(36),
-            message VARCHAR(255) NOT NULL,
-            username char(36),
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`,
-        (err, result) => {
-            if (err) throw err;
-            console.log("Messages table created/exists");
-        }
-    );
+    db.query(`
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        userId CHAR(36) UNIQUE,
+        username VARCHAR(255), 
+        email VARCHAR(255), 
+        password VARCHAR(255)
+    )`,
+    (err, result) => {
+        if (err) throw err;
+        console.log("Users table created/exists");
+
+        db.query(
+            `CREATE TABLE IF NOT EXISTS messages (
+                messageId VARCHAR(255),
+                userId CHAR(36),
+                message VARCHAR(255) NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (userId) REFERENCES users(userId)
+            )`,
+            (err, result) => {
+                if (err) throw err;
+                console.log("Messages table created/exists");
+            }
+        );
+    }
+);
 
     db.query(
         `CREATE TABLE IF NOT EXISTS profile_images (
@@ -88,19 +101,6 @@ db.connect((err) => {
             console.log("Profile Images table created/exists");
         }
     );
-
-    db.query(`
-    CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(255), 
-        email VARCHAR(255), 
-        password VARCHAR(255)
-    )`,
-    (err, result) => {
-        if (err) throw err;
-        console.log("Users table created/exists");
-    }
-);
 });
 
 
@@ -120,22 +120,7 @@ const io = socketIo(server, {
 
 app.use(cors({ origin: 'http://localhost:5173' }));
 
-io.on('connection', (socket) => {
-    console.log('User connected');
 
-    socket.on('message', (message) => {
-        console.log('Message received:', message);
-        const query = 'INSERT INTO messages (message, messageId, id, username) VALUES (?, ?, ?, ?)';
-        db.query(query, [message, socket.id, null, null], (err, result) => {
-            if (err) throw err;
-        });
-        io.emit('message', message);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
-});
 
 // Routes handlers
 
@@ -198,27 +183,65 @@ app.post('/login', (req, res) => {
 });
 
 // 7. Message post
-app.post('/send-message', (req, res) => {
-    const message = req.body.message;
-    const userId = req.body.userId;
 
-    // Insert the message into the messages table
-    db.query(
-        "INSERT INTO messages (text, userId) VALUES (?, ?)",
-        [message, userId],
-        (err, result) => {
-            if (err) {
-                console.error('Error:', err);
-                res.status(500).send('Server error');
-            } else {
-                res.status(200).send('Message sent');
+io.on('connection', (socket) => {
+    console.log('User connected');
+
+    // Listen for a new event 'set-username'
+    socket.on('set-username', (username) => {
+        // Associate the username with the socket
+        socket.username = username;
+    
+        const query = 'SELECT userId FROM users WHERE username = ?';
+        db.query(query, [username], (err, result) => {
+            if (err) throw err;
+
+            // If a user with this username exists, set socket.userId
+            if (result.length > 0) {
+                socket.userId = result[0].userId;
+
+                // Emit a new event 'username-set'
+                socket.emit('username-set');
             }
-        }
-    );
+        });
+    });
+
+    socket.on('message', (message) => {
+        console.log('Message received:', message);
+        const query = 'INSERT INTO messages (message, messageId, userId) VALUES (?, ?, ?)';
+        // Include the username in the data that is stored in the database
+        db.query(query, [message, socket.id, socket.userId], (err, result) => {
+            if (err) throw err;
+        });
+        // Include the username in the data that is emitted to the other clients
+        io.emit('message', {username: socket.username, message: message});
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
 });
 
 
 // 8. Profile img 
+
+app.post('/upload', (req, res) => {
+    const imageBuffer = req.body.image;
+    const username = req.body.username;
+
+    db.query(
+        "INSERT INTO profile_images (username, img) VALUES (?, ?)",
+        [username, imageBuffer],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                res.sendStatus(500);
+            } else {
+                res.json({ imageUrl: '/profile/' + username });
+            }
+        }
+    );
+});
 
 app.get('/profile/:username', (req, res) => {
     db.query(
@@ -230,10 +253,7 @@ app.get('/profile/:username', (req, res) => {
                 res.sendStatus(500);
             } else {
                 if (result.length > 0) {
-                    // Convert the image data to a base64 string
-                    const img = Buffer.from(result[0].img).toString('base64');
-
-                    res.send(img);
+                    res.json({ imageUrl: result[0].img });
                 } else {
                     res.sendStatus(404);
                 }

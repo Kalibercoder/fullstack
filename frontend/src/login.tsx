@@ -38,12 +38,12 @@ const LoginPage = () => {
         })
         .then((data: IResponseData) => {
             if (data.accessToken) {
-                // Store the access token in the local storage
+                
                 localStorage.setItem('accessToken', data.accessToken);
-
-                // Check if the access token was successfully stored
-                if (localStorage.getItem('accessToken')) {
-                    // Navigate to the '/message' page
+                localStorage.setItem('username', username);
+                
+                if (localStorage.getItem('accessToken') && localStorage.getItem('username')) {
+                    
                     navigate('/message'); 
                 } else {
                     throw new Error('Failed to store access token');

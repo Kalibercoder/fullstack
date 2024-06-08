@@ -19,9 +19,26 @@ function Profile() {
             console.error(error);
         }
     }
-
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        // Add your logic here to handle the image upload
+    
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('username', username);
+    
+            try {
+                const response = await axios.post('/upload', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+    
+                setProfileImg(response.data.imageUrl);
+            } catch (error) {
+                console.error(error);
+            }
+        }
     }
 
     return (
