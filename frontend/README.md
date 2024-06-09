@@ -4,7 +4,7 @@ Detta projekt är en sida där användaren kan skapa ett konto, logga in och cha
 messageboard. 
 
 För att det ska funka behöver du skapa en .env fil och skriva ACCESS_TOKEN_SECRET= samt en secret som du kan generera 
-i generate.js.
+i generate.js. Du behöver även ändra lösenord och username för din mysql databas i server.js.
 
 Profilsidan fungerar inte samt att koden är stökig, ursäktar för detta. Tiden tog slut så får lämna in det som det är.
 

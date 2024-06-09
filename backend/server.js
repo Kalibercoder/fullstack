@@ -54,8 +54,8 @@ function authenticateToken(req, res, next) {
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
-    password: 'Pool1234az',
-    database: 'messageback',
+    password: 'Pool1234az',  // <--- Change this to your MySQL password
+    database: 'messageback', // <--- Change this to your MySQL database name
     insecureAuth : true
 });
 
@@ -210,11 +210,9 @@ io.on('connection', (socket) => {
     socket.on('message', (message) => {
         console.log('Message received:', message);
         const query = 'INSERT INTO messages (message, messageId, userId) VALUES (?, ?, ?)';
-        // Include the username in the data that is stored in the database
         db.query(query, [message, socket.id, socket.userId], (err, result) => {
             if (err) throw err;
         });
-        // Include the username in the data that is emitted to the other clients
         io.emit('message', {username: socket.username, message: message});
     });
 
@@ -225,6 +223,7 @@ io.on('connection', (socket) => {
 
 
 // 8. Profile img 
+// Not working
 
 app.post('/upload', upload.single('image'), async (req, res) => {
     const imageFile = req.file; // this is the uploaded file
