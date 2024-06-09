@@ -1,30 +1,13 @@
-# React + TypeScript + Vite
+Tjabba Richard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Detta projekt är en sida där användaren kan skapa ett konto, logga in och chatta med andra på ett gemensamt 
+messageboard. 
 
-Currently, two official plugins are available:
+För att det ska funka behöver du skapa en .env fil och skriva ACCESS_TOKEN_SECRET= samt en secret som du kan generera 
+i generate.js.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Profilsidan fungerar inte samt att koden är stökig, ursäktar för detta. Tiden tog slut så får lämna in det som det är.
 
-## Expanding the ESLint configuration
+Hoppas du får en fin sommar och så ses vi i höst.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+Bästa hälsningar Theo.
