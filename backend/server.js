@@ -26,6 +26,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 const cookieParser = require('cookie-parser');
+const fs = require('fs').promises
 
 const app = express();
 app.use(express.json());
@@ -225,35 +226,49 @@ io.on('connection', (socket) => {
 
 // 8. Profile img 
 
-app.post('/upload', (req, res) => {
-    const imageBuffer = req.body.image;
+app.post('/upload', upload.single('image'), async (req, res) => {
+    const imageFile = req.file; // this is the uploaded file
     const username = req.body.username;
 
-    db.query(
-        "INSERT INTO profile_images (username, img) VALUES (?, ?)",
-        [username, imageBuffer],
-        (err, result) => {
-            if (err) {
-                console.error(err);
-                res.sendStatus(500);
-            } else {
-                res.json({ imageUrl: '/profile/' + username });
+    try {
+        // Read the file into a Buffer
+        const imageBuffer = await fs.readFile(imageFile.path);
+
+        // Insert the Buffer into the database
+        db.query(
+            "INSERT INTO profile_images (username, img) VALUES (?, ?)",
+            [username, imageBuffer],
+            (err, result) => {
+                if (err) {
+                    console.error(err);
+                    res.sendStatus(500);
+                } else {
+                    res.json({ imageUrl: '/profile/' + username });
+                }
             }
-        }
-    );
+        );
+    } catch (err) {
+        console.error(err);
+        res.sendStatus(500);
+    }
 });
 
 app.get('/profile/:username', (req, res) => {
+    const username = req.params.username;
+
     db.query(
         "SELECT img FROM profile_images WHERE username = ?",
-        [req.params.username],
+        [username],
         (err, result) => {
             if (err) {
                 console.error(err);
                 res.sendStatus(500);
             } else {
                 if (result.length > 0) {
-                    res.json({ imageUrl: result[0].img });
+                    
+                    res.setHeader('Content-Type', 'image/jpeg'); 
+                
+                    res.send(result[0].img);
                 } else {
                     res.sendStatus(404);
                 }

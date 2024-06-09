@@ -35,7 +35,7 @@ function Profile() {
             formData.append('username', username);
     
             try {
-                const response = await axios.post('/upload', formData, {
+                const response = await axios.post('http://localhost:3000/upload', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -50,18 +50,16 @@ function Profile() {
 
     return (
         <div>
-            <h1>{username}s Profile Page!</h1>
+            <h1>{username}'s Profile Page!</h1>
             <a href="/message"><h2>Messageboard</h2></a>
             <form className='profile-form' onSubmit={handleFormSubmit}>
                 <div className='img-upload-container'>
                     <input className='img-input' type="file" accept="image/*" onChange={handleImageUpload} />
-                    {profileImg && <img src={profileImg} alt="profileimg" />}
+                </div>
+                <div className='about-box'>
+                    {profileImg && <img src={profileImg} alt="Profile" />}
                 </div>
                 <input type="text" placeholder="Write something about yourself!" />
-                <div className='about-box'>
-                    
-                </div>
-                <button type="submit">Save</button>
             </form>
         </div>
     );
