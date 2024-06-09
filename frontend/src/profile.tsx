@@ -1,13 +1,20 @@
 
 // This is the Profile component. 
 // It displays the username and a file input field to upload a profile image.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 function Profile() {
-    const [aboutMe, setAboutMe] = useState('');
+    const [aboutMe] = useState('');
     const [username, setUsername] = useState("");
     const [profileImg, setProfileImg] = useState("");
+
+    useEffect(() => {
+        const storedUsername = localStorage.getItem('username');
+        if (storedUsername) {
+            setUsername(storedUsername);
+        }
+    }, []);
 
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -43,13 +50,12 @@ function Profile() {
 
     return (
         <div>
-            <h1>Profile Page</h1>
+            <h1>{username}s Profile Page!</h1>
             <a href="/message"><h2>Messageboard</h2></a>
             <form className='profile-form' onSubmit={handleFormSubmit}>
-                <h2>{username}</h2> {/* Display the username */}
                 <div className='img-upload-container'>
                     <input className='img-input' type="file" accept="image/*" onChange={handleImageUpload} />
-                    {profileImg && <img src={profileImg} alt="Profile" />}
+                    {profileImg && <img src={profileImg} alt="profileimg" />}
                 </div>
                 <input type="text" placeholder="Write something about yourself!" />
                 <div className='about-box'>
